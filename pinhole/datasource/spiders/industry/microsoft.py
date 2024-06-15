@@ -1,5 +1,5 @@
 from pinhole.datasource.spider import PinholeScrapySpider
-from pinhole.datasource.document import Document, DocumentContent
+from pinhole.datasource.document import Document
 
 from scrapy.responsetypes import Response  # type: ignore
 from markdownify import markdownify as md  # type: ignore
@@ -20,9 +20,6 @@ class MicrosoftSecurityBlog(PinholeScrapySpider):
 
         self.visited_urls: Set[str] = set()
 
-    def parse_json_list(self, response: Response, **kwargs: Any) -> Any:
-        print(response.text)
-
     def parse(self, response: Response, **kwargs: Any) -> Any:
         if response.url in self.visited_urls:
             return
@@ -37,5 +34,8 @@ class MicrosoftSecurityBlog(PinholeScrapySpider):
         title = response.xpath("//header//h1/text()").get()
         if title is not None:
             date = dateparser.parse(response.xpath("//main//time/text()").get()) or datetime.today()
-            doc = Document(title, date, response.url, 'Microsoft', DocumentContent(md(response.text)))
+            doc = Document.build(
+                title, date, response.url, 'Microsoft',
+                md(response.text)
+            )
             yield doc

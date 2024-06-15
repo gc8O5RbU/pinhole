@@ -6,7 +6,9 @@ install_requires = [
     "loguru",
     "pydantic",
     "markdownify",
-    "streamlit"
+    "streamlit",
+    "dateparser",
+    "fastapi"
 ]
 
 extras_require = {
@@ -19,7 +21,7 @@ extras_require = {
 
 setuptools.setup(
     name="pinhole",
-    version="2024-6",
+    version="2024.6",
     install_requires=install_requires,
     extras_require=extras_require,
     packages=setuptools.find_packages(".", exclude=["tests"])

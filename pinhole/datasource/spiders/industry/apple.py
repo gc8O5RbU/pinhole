@@ -1,5 +1,5 @@
 from pinhole.datasource.spider import PinholeScrapySpider
-from pinhole.datasource.document import Document, DocumentContent
+from pinhole.datasource.document import Document
 
 from scrapy.responsetypes import Response  # type: ignore
 from markdownify import markdownify as md  # type: ignore
@@ -24,10 +24,9 @@ class AppleSecurityBlog(PinholeScrapySpider):
         except Exception:
             parsed_date = datetime.today()
 
-        doc = Document(
+        doc = Document.build(
             title, parsed_date, response.url,
-            "Apple Inc.",
-            DocumentContent(md(response.text))
+            "Apple Inc.", md(response.text)
         )
         yield doc
 
