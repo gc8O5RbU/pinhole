@@ -1,15 +1,17 @@
 from pinhole.datasource.spider import PinholeSpider
 from pinhole.datasource.spiders.industry.apple import AppleSecurityBlog
 from pinhole.datasource.spiders.industry.microsoft import MicrosoftSecurityBlog
-from pinhole.datasource.document import Document, Summary
+from pinhole.datasource.document import Document, DocumentRef, Summary
 from pinhole.project import RemoteProject
-from pinhole.models.glm import GLMChatModel
-from pinhole.models.base import ChatContext
+from pinhole.models.deepseek import DeepSeekChatModel
+from pinhole.models.openai import OpenaiChatModel
+from pinhole.models.base import ChatContext, ChatModel
 from pinhole.models.profiler import Profiler
 
+from argparse import ArgumentParser, Namespace
 from loguru import logger
 from typing import List
-from typing import Type as SubType
+from typing import Optional, Type as SubType
 
 
 spiders: List[SubType[PinholeSpider]] = [
@@ -18,6 +20,11 @@ spiders: List[SubType[PinholeSpider]] = [
 ]
 
 project = RemoteProject("http://127.0.0.1:8000")
+
+
+def collector_add_subparser_args(parser: ArgumentParser) -> None:
+    parser.add_argument("--no-summarize", action='store_true',
+                        help="do not run the LLM-based summarization procedure")
 
 
 def crawler() -> None:
@@ -48,11 +55,12 @@ def crawler() -> None:
 
 def summarizer() -> None:
     profiler = Profiler()
-    model = GLMChatModel()
-    model.profiler = profiler
-    ctx = ChatContext(model)
-    ctx.system_prompt = "你是一个熟悉计算机领域的自身研究者，你的输出以Markdown格式给出。"
-    prompt = """
+    models: List[ChatModel] = [DeepSeekChatModel(), OpenaiChatModel()]
+    for model in models:
+        model.profiler = profiler
+
+    system_prompt = "你是一个熟悉计算机领域的自身研究者，你的输出以Markdown格式给出。"
+    prompt_template = """
     请阅读以下文章内容并用中文给出简单总结，同时列出其中你认为最有价值的核心内容。
 
     # {title}
@@ -60,16 +68,40 @@ def summarizer() -> None:
     {content}
     """
 
+    def generate_summary(document: Document) -> Optional[Summary]:
+        for model in models:
+            try:
+                ctx = ChatContext(model, system_prompt=system_prompt)
+                resp = ctx.chat(prompt_template.format(title=document.title, content=document.content))
+                summary = Summary.build(dref.id, model.pretty_name(), resp)
+                return summary
+            except Exception as ex:
+                logger.warning(f"model {model.pretty_name()} reports failure: {ex}")
+
+        return None
+
+    drefs_to_summary: List[DocumentRef] = []
     for dref in project.get_document_refs():
         if project.get_summary(dref.id) is None:
-            document = project.get_document(dref.id)
-            assert document is not None
-            summary_content = ctx.fork().chat(prompt.format(title=document.title, content=document.content))
-            summary = Summary.build(dref.id, model.pretty_name(), summary_content)
+            drefs_to_summary.append(dref)
+
+    drefs_to_summary.sort(key=lambda dref: dref.date, reverse=True)
+    N = len(drefs_to_summary)
+    for i, dref in enumerate(drefs_to_summary):
+        document = project.get_document(dref.id)
+        assert document is not None
+        summary = generate_summary(document)
+        if summary is not None:
             project.create_summary(summary)
+            logger.info(f"({i}/{N}) summary created for document {dref.id}: {dref.title}")
+        else:
+            logger.error(f"({i}/{N}) failed to summarize document {dref.id}: {dref.title}")
+
+    profiler.print_stats()
 
 
-def main() -> None:
+def main(args: Namespace) -> None:
     logger.info("start information collecting")
     crawler()
-    summarizer()
+    if not args.no_summarize:
+        summarizer()

@@ -57,6 +57,3 @@ class Profiler:
         for model, stats in self.stats.items():
             input_cost, output_cost = stats.get_token_cost()
             logger.info(f"{model.pretty_name()}: input-tokens {input_cost}, output-tokens {output_cost}")
-
-    def print_detailed_stats(self) -> None:
-        pass

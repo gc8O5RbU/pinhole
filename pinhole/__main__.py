@@ -1,3 +1,5 @@
+from pinhole.collector import collector_add_subparser_args
+
 from fastapi_cli.cli import main as fastapi_main
 
 from argparse import ArgumentParser, Namespace
@@ -13,6 +15,7 @@ def parse_args() -> Namespace:
     apiserver.add_argument("project", type=str)
     appserver = subparsers.add_parser("appserver")
     collector = subparsers.add_parser("collector")
+    collector_add_subparser_args(collector)
     return parser.parse_args()
 
 
@@ -36,7 +39,7 @@ def run_appserver(args: Namespace) -> None:
 
 def run_collector(args: Namespace) -> None:
     from pinhole.collector import main
-    main()
+    main(args)
 
 
 def main() -> None:
