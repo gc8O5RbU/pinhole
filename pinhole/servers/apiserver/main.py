@@ -1,14 +1,12 @@
 
+from pinhole.datasource.document import Document, Summary
 from pinhole.project import Project
-from pinhole.datasource.document import Document, DocumentRef
 
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
-from pydantic.dataclasses import dataclass, Field
 from os import environ
-from os.path import isdir, join
-from typing import List
+from os.path import isdir
 
 
 app = FastAPI()
@@ -26,8 +24,16 @@ async def root():
 
 @app.post("/document/create")
 async def create_document(document: Document):
-    project.add_document(document)
+    project.create_document(document)
     return {"succeeded": True}
+
+
+@app.get("/document/get")
+async def get_document(id: int):
+    return {
+        "succeeded": True,
+        "document": project.get_document(id)
+    }
 
 
 @app.get("/document/list")
@@ -35,6 +41,20 @@ async def list_document():
     return {
         "succeeded": True,
         "documents": project.get_document_refs()
+    }
+
+
+@app.post("/summary/create")
+async def create_summary(summary: Summary):
+    project.create_summary(summary)
+    return {"succeeded": True}
+
+
+@app.get("/summary/get")
+async def get_summary(document_id: int):
+    return {
+        "succeeded": True,
+        "summary": project.get_summary(document_id)
     }
 
 

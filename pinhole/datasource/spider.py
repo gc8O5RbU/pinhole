@@ -11,8 +11,9 @@ import json
 
 
 class PinholeSpider:
-    name: str = "unknown"
-    start_urls: List[str] = []
+
+    def get_name(self) -> str:
+        raise NotImplementedError
 
     def collect(self) -> List[Document]:
         raise NotImplementedError
@@ -53,6 +54,9 @@ class PinholeNativeSpider(PinholeSpider):
 
 class PinholeScrapySpider(PinholeSpider, Spider):
 
+    name: str = "unknown"
+    start_urls: List[str] = []
+
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
 
@@ -71,6 +75,9 @@ class PinholeScrapySpider(PinholeSpider, Spider):
         cp = CrawlerProcess(settings=settings)
         cp.crawl(type(self))
         cp.start()
+
+    def get_name(self) -> str:
+        return self.name
 
     def start(self) -> None:
         _, self.temp_file = mkstemp(suffix=f"-spider.json")
