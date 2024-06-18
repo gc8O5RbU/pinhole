@@ -5,6 +5,7 @@ install_requires = [
     "scrapy",
     "loguru",
     "pydantic",
+    "pymupdf",
     "markdownify",
     "streamlit",
     "dateparser",
