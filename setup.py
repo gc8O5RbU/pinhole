@@ -8,7 +8,7 @@ install_requires = [
     "markdownify",
     "streamlit",
     "dateparser",
-    "fastapi"
+    "fastapi", "fastapi-cli"
 ]
 
 extras_require = {
