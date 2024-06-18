@@ -16,8 +16,8 @@ from typing import Optional, Type as SubType
 
 
 spiders: List[SubType[PinholeSpider]] = [
-    # AppleSecurityBlog,
-    # MicrosoftSecurityBlog,
+    AppleSecurityBlog,
+    MicrosoftSecurityBlog,
     LwnHeadline
 ]
 
