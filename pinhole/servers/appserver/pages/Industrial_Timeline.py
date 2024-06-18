@@ -40,5 +40,6 @@ st.set_page_config(layout='wide')
 st.title("Industrial Timeline | 产业信息")
 
 docrefs = project.get_document_refs()
+docrefs.sort(key=lambda ref: ref.date, reverse=True)
 display_documents("Last Week", docrefs, lambda dref: (datetime.today() - dref.date).days <= 7)
 display_documents("Last Month", docrefs, lambda dref: 7 < (datetime.today() - dref.date).days <= 30)

@@ -29,6 +29,9 @@ class Document:
     def title(self) -> str:
         return bytes.fromhex(self._title).decode('utf8')
 
+    def set_title(self, title: str) -> None:
+        self._title = title.encode('utf8').hex()
+
     @property
     def url(self) -> str:
         return bytes.fromhex(self._url).decode('utf8')
@@ -40,6 +43,9 @@ class Document:
     @property
     def content(self) -> str:
         return bytes.fromhex(self._content).decode('utf8')
+
+    def set_content(self, content: str) -> None:
+        self._content = content.encode('utf8').hex()
 
     @classmethod
     def build(cls, title: str, date: datetime, url: str, publisher: str, content: str) -> 'Document':

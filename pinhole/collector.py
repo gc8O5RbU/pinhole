@@ -1,6 +1,7 @@
 from pinhole.datasource.spider import PinholeSpider
 from pinhole.datasource.spiders.industry.apple import AppleSecurityBlog
 from pinhole.datasource.spiders.industry.microsoft import MicrosoftSecurityBlog
+from pinhole.datasource.spiders.community.lwn import LwnHeadline
 from pinhole.datasource.document import Document, DocumentRef, Summary
 from pinhole.project import RemoteProject
 from pinhole.models.deepseek import DeepSeekChatModel
@@ -15,8 +16,9 @@ from typing import Optional, Type as SubType
 
 
 spiders: List[SubType[PinholeSpider]] = [
-    AppleSecurityBlog,
-    MicrosoftSecurityBlog
+    # AppleSecurityBlog,
+    # MicrosoftSecurityBlog,
+    LwnHeadline
 ]
 
 project = RemoteProject("http://127.0.0.1:8000")
