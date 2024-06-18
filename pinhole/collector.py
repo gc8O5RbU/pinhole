@@ -16,7 +16,7 @@ from typing import Optional, Type as SubType
 
 spiders: List[SubType[PinholeSpider]] = [
     AppleSecurityBlog,
-    # MicrosoftSecurityBlog
+    MicrosoftSecurityBlog
 ]
 
 project = RemoteProject("http://127.0.0.1:8000")

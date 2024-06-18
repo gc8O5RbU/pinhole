@@ -14,6 +14,7 @@ def parse_args() -> Namespace:
     apiserver = subparsers.add_parser("apiserver")
     apiserver.add_argument("project", type=str)
     appserver = subparsers.add_parser("appserver")
+    appserver.add_argument("--port", type=int, default=8080)
     collector = subparsers.add_parser("collector")
     collector_add_subparser_args(collector)
     return parser.parse_args()
@@ -32,7 +33,7 @@ def run_appserver(args: Namespace) -> None:
     from streamlit.web.cli import main_run
     main_run([
         app_server_path,
-        "--server.port", "8080",
+        "--server.port", str(args.port),
         "--server.runOnSave", "true"
     ])
 

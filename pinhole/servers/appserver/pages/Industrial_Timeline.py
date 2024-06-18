@@ -21,7 +21,7 @@ def display_documents(title: str, drefs: List[DocumentRef], filt: Callable[[Docu
             date = dref.date.strftime("%Y-%m-%d")
             container = st.container()
             container.markdown(f"**[{date}]** (*{dref.publisher}*) {dref.title}")
-            cols = st.columns(8)
+            cols = st.columns(6)
             cols[0].link_button("Link | 原文", url=dref.url, use_container_width=True)
             if cols[1].button("Summary | 简介", key=f"summary-{dref.id}", use_container_width=True):
                 display_summary(dref)
