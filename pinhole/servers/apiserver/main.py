@@ -1,5 +1,6 @@
 
-from pinhole.datasource.document import Document, Summary
+from pinhole.datasource.document import Document
+from pinhole.datasource.summary import Summary
 from pinhole.datasource.publication import Publication
 from pinhole.project import Project
 from pinhole.user import AuthRequest
@@ -8,6 +9,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
+from typing import Optional
 from os import environ
 from os.path import isdir
 
@@ -62,11 +64,14 @@ async def create_summary(summary: Summary):
 
 
 @app.get("/summary/get")
-async def get_summary(document_id: int):
-    return {
-        "succeeded": True,
-        "summary": project.get_summary(document_id)
-    }
+async def get_summary(document_id: int = -1, publication_id: int = -1):
+    summary: Optional[Summary] = None
+    if document_id >= 0:
+        summary = project.get_summary_of_document(document_id)
+    elif publication_id >= 0:
+        summary = project.get_summary_of_publication(publication_id)
+
+    return {"succeeded": True, "summary": summary}
 
 
 @app.post("/publication/create")

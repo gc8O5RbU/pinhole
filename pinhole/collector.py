@@ -1,5 +1,6 @@
 from pinhole.datasource.spiders.all import all_spiders, PinholeSpider
-from pinhole.datasource.document import Document, DocumentRef, Summary
+from pinhole.datasource.document import Document, DocumentRef
+from pinhole.datasource.summary import Summary
 from pinhole.datasource.publication import Publication
 from pinhole.project import RemoteProject
 from pinhole.models.deepseek import DeepSeekChatModel
@@ -20,8 +21,10 @@ def collector_add_subparser_args(parser: ArgumentParser) -> None:
     parser.add_argument("--spider", type=str,
                         help="specify a list of spiders to run, separated by ','." +
                              "all spiders will be executed by default")
-    parser.add_argument("--no-summarize", action='store_true',
+    parser.add_argument("--no-summarizing", action='store_true',
                         help="do not run the LLM-based summarization procedure")
+    parser.add_argument("--no-crawling", action="store_true",
+                        help="do not run the crawling spiders")
 
 
 def crawler(args: Namespace) -> None:
@@ -68,7 +71,7 @@ def crawler(args: Namespace) -> None:
     logger.info(f"{nadded} new artifacts are added to the project")
 
 
-def summarizer() -> None:
+def summarize_documents(args: Namespace) -> None:
     profiler = Profiler()
     models: List[ChatModel] = [DeepSeekChatModel(), OpenaiChatModel()]
     for model in models:
@@ -88,7 +91,7 @@ def summarizer() -> None:
             try:
                 ctx = ChatContext(model, system_prompt=system_prompt)
                 resp = ctx.chat(prompt_template.format(title=document.title, content=document.content))
-                summary = Summary.build(dref.id, model.pretty_name(), resp)
+                summary = Summary.build(dref.id, -1, model.pretty_name(), resp)
                 return summary
             except Exception as ex:
                 logger.warning(f"model {model.pretty_name()} reports failure: {ex}")
@@ -97,7 +100,7 @@ def summarizer() -> None:
 
     drefs_to_summary: List[DocumentRef] = []
     for dref in project.get_document_refs():
-        if project.get_summary(dref.id) is None:
+        if project.get_summary_of_document(dref.id) is None:
             drefs_to_summary.append(dref)
 
     drefs_to_summary.sort(key=lambda dref: dref.date, reverse=True)
@@ -115,8 +118,17 @@ def summarizer() -> None:
     profiler.print_stats()
 
 
+def summarize_publications(args: Namespace) -> None:
+    profiler = Profiler()
+    models: List[ChatModel] = [DeepSeekChatModel(), OpenaiChatModel()]
+    for model in models:
+        model.profiler = profiler
+
+
 def main(args: Namespace) -> None:
     logger.info("start information collecting")
-    crawler(args)
-    if not args.no_summarize:
-        summarizer()
+    if not args.no_crawling:
+        crawler(args)
+    if not args.no_summarizing:
+        summarize_documents(args)
+        summarize_publications(args)

@@ -34,7 +34,7 @@ def run_appserver(args: Namespace) -> None:
         app_server_path,
         "--server.port", str(args.port),
         "--server.runOnSave", "true",
-        "--ui.hideSidebarNav", "true"
+        "--client.showSidebarNavigation", "false"
     ])
 
 

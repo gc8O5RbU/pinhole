@@ -28,7 +28,7 @@ def display_documents(title: str, drefs: List[DocumentRef], filt: Callable[[Docu
 def display_summary(dref: DocumentRef) -> None:
     st.subheader(dref.title)
     st.write(dref.date)
-    summary = project.get_summary(dref.id)
+    summary = project.get_summary_of_document(dref.id)
     if summary is not None:
         st.markdown(summary.content)
 

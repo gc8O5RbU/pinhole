@@ -1,4 +1,5 @@
-from pinhole.datasource.document import Document, DocumentRef, Summary
+from pinhole.datasource.document import Document, DocumentRef
+from pinhole.datasource.summary import Summary
 from pinhole.datasource.publication import Publication, PublicationRef
 from pinhole.user import User, UserRef, AuthRequest
 
@@ -37,7 +38,10 @@ class AbstractProject:
     def create_summary(self, summary: Summary) -> None:
         raise NotImplementedError
 
-    def get_summary(self, document_id: int) -> Optional[Summary]:
+    def get_summary_of_document(self, document_id: int) -> Optional[Summary]:
+        raise NotImplementedError
+
+    def get_summary_of_publication(self, publication_id: int) -> Optional[Summary]:
         raise NotImplementedError
 
     def create_publication(self, publication: Publication) -> None:
@@ -122,8 +126,17 @@ class RemoteProject:
         summary_json = RootModel[Summary](summary).model_dump_json()
         self.__post(remote_addr, data=summary_json)
 
-    def get_summary(self, document_id: int) -> Optional[Summary]:
+    def get_summary_of_document(self, document_id: int) -> Optional[Summary]:
         remote_addr = f"{self.base_addr}/summary/get?document_id={document_id}"
+        resp = self.__get(remote_addr)
+
+        if resp["summary"] is None:
+            return None
+        else:
+            return Summary.from_json(resp["summary"])
+
+    def get_summary_of_publication(self, publication_id: int) -> Optional[Summary]:
+        remote_addr = f"{self.base_addr}/summary/get?publication_id={publication_id}"
         resp = self.__get(remote_addr)
 
         if resp["summary"] is None:
@@ -276,6 +289,7 @@ class Project:
         CREATE TABLE IF NOT EXISTS summaries (
             id integer PRIMARY KEY,
             document_id integer UNIQUE,
+            publication_id integer UNIQUE,
             model text,
             content text
         )
@@ -296,7 +310,7 @@ class Project:
         )
         self.__dbconn.commit()
 
-    def get_summary(self, document_id: int) -> Optional[Summary]:
+    def get_summary_of_document(self, document_id: int) -> Optional[Summary]:
         self.__create_summaries_table()
         cur = self.__dbconn.cursor()
         sql = "SELECT id, document_id, model, content FROM summaries WHERE document_id == ?"
@@ -308,7 +322,21 @@ class Project:
 
         assert len(rows) == 1
         (id, document_id, model, summary) = rows[0]
-        return Summary.build(document_id, model, summary)
+        return Summary.build(document_id, -1, model, summary)
+
+    def get_summary_of_publication(self, publication_id: int) -> Optional[Summary]:
+        self.__create_summaries_table()
+        cur = self.__dbconn.cursor()
+        sql = "SELECT id, publication_id, model, content FROM summaries WHERE publication_id == ?"
+        cur.execute(sql, (publication_id,))
+        rows = cur.fetchall()
+
+        if len(rows) == 0:
+            return None
+
+        assert len(rows) == 1
+        (id, publication_id, model, summary) = rows[0]
+        return Summary.build(-1, publication_id, model, summary)
 
     ###########################################################################
     # Assistant functions for managing publications

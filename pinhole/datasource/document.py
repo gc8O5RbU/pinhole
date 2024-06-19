@@ -82,31 +82,3 @@ class DocumentRef:
     @classmethod
     def from_json(cls, content: str) -> 'DocumentRef':
         return RootModel[DocumentRef].model_validate(content).root
-
-
-@dataclass(repr=False)
-class Summary:
-    document_id: int
-    _model: str
-    _content: str
-
-    def __repr__(self) -> str:
-        return f"<Summary of document {self.document_id} />"
-
-    @property
-    def model(self) -> str:
-        return hexstr2str(self._model)
-
-    @property
-    def content(self) -> str:
-        return hexstr2str(self._content)
-
-    @classmethod
-    def build(cls, document_id: int, model: str, publisher: str) -> 'Summary':
-        _model = str2hexstr(model)
-        _publisher = str2hexstr(publisher)
-        return Summary(document_id, _model, _publisher)
-
-    @classmethod
-    def from_json(cls, content: str) -> 'Summary':
-        return RootModel[Summary].model_validate(content).root
