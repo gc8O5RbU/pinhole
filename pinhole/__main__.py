@@ -1,5 +1,4 @@
 from pinhole.collector import collector_add_subparser_args
-
 from fastapi_cli.cli import main as fastapi_main
 
 from argparse import ArgumentParser, Namespace

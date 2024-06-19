@@ -1,7 +1,4 @@
-from pinhole.datasource.spider import PinholeSpider
-from pinhole.datasource.spiders.industry.apple import AppleSecurityBlog
-from pinhole.datasource.spiders.industry.microsoft import MicrosoftSecurityBlog
-from pinhole.datasource.spiders.community.lwn import LwnHeadline
+from pinhole.datasource.spiders.all import all_spiders, PinholeSpider
 from pinhole.datasource.document import Document, DocumentRef, Summary
 from pinhole.project import RemoteProject
 from pinhole.models.deepseek import DeepSeekChatModel
@@ -12,31 +9,41 @@ from pinhole.models.profiler import Profiler
 from argparse import ArgumentParser, Namespace
 from loguru import logger
 from typing import List
-from typing import Optional, Type as SubType
+from typing import Optional
 
-
-spiders: List[SubType[PinholeSpider]] = [
-    AppleSecurityBlog,
-    MicrosoftSecurityBlog,
-    LwnHeadline
-]
 
 project = RemoteProject("http://127.0.0.1:8000")
 
 
 def collector_add_subparser_args(parser: ArgumentParser) -> None:
+    parser.add_argument("--spider", type=str,
+                        help="specify a list of spiders to run, separated by ','." +
+                             "all spiders will be executed by default")
     parser.add_argument("--no-summarize", action='store_true',
                         help="do not run the LLM-based summarization procedure")
 
 
-def crawler() -> None:
+def crawler(args: Namespace) -> None:
     logger.info("crawler use following spiders")
     spider_instances: List[PinholeSpider] = []
-    for spider in spiders:
+
+    if args.spider is not None:
+        spider_names = {name.strip() for name in args.spider.split(',')}
+    else:
+        spider_names = {s.__name__ for s in all_spiders}
+
+    for spider in all_spiders:
+        if spider.__name__ not in spider_names:
+            continue
+
+        spider_names.remove(spider.__name__)
         logger.info(f" - {spider.__name__}")
         spider_instance = spider()
         spider_instance.start()
         spider_instances.append(spider_instance)
+
+    if spider_names:
+        logger.warning(f"the following spiders {spider_names} are not found")
 
     documents: List[Document] = []
     for spider_instance in spider_instances:
@@ -104,6 +111,6 @@ def summarizer() -> None:
 
 def main(args: Namespace) -> None:
     logger.info("start information collecting")
-    crawler()
+    crawler(args)
     if not args.no_summarize:
         summarizer()
