@@ -4,7 +4,7 @@ import setuptools
 install_requires = [
     "scrapy",
     "loguru",
-    "pydantic",
+    "pydantic>=2.7",
     "pymupdf",
     "markdownify",
     "streamlit",

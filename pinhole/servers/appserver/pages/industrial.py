@@ -1,13 +1,10 @@
-from pinhole.project import RemoteProject
-from pinhole.datasource.document import Document, DocumentRef
-from datetime import datetime, timedelta
+from pinhole.servers.appserver.common import project, navi, auth
+from pinhole.datasource.document import DocumentRef
+from datetime import datetime
 
 from typing import List, Callable
 
 import streamlit as st
-
-
-project = RemoteProject("http://127.0.0.1:8000")
 
 
 def display_documents(title: str, drefs: List[DocumentRef], filt: Callable[[DocumentRef], bool]) -> None:
@@ -36,8 +33,14 @@ def display_summary(dref: DocumentRef) -> None:
         st.markdown(summary.content)
 
 
-st.set_page_config(layout='wide')
+st.set_page_config(
+    layout='wide',
+    page_title='Industrial Timeline | 产业信息'
+)
 st.title("Industrial Timeline | 产业信息")
+
+navi()
+auth_state = auth()
 
 docrefs = project.get_document_refs()
 docrefs.sort(key=lambda ref: ref.date, reverse=True)

@@ -28,12 +28,13 @@ def run_apiserver(args: Namespace) -> None:
 
 
 def run_appserver(args: Namespace) -> None:
-    app_server_path = join(dirname(realpath(argv[0])), "servers", "appserver", "Pinhole.py")
+    app_server_path = join(dirname(realpath(argv[0])), "servers", "appserver", "home.py")
     from streamlit.web.cli import main_run
     main_run([
         app_server_path,
         "--server.port", str(args.port),
-        "--server.runOnSave", "true"
+        "--server.runOnSave", "true",
+        "--ui.hideSidebarNav", "true"
     ])
 
 

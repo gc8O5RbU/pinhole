@@ -24,7 +24,9 @@ class ArxivBase(PinholeScrapySpider):
         title = response.xpath("//meta[@name='citation_title']/@content").get()
         date = dateparser.parse(response.xpath("//meta[@name='citation_date']/@content").get())
         pdf_url = response.xpath("//meta[@name='citation_pdf_url']/@content").get()
-        print(title, date, pdf_url)
+        arxiv_id = response.xpath("//meta[@name='citation_arxiv_id']/@content").get()
+        authors = response.xpath("//meta[@name='citation_author']/@content").getall()
+        print(title, date, arxiv_id, authors)
 
     def parse(self, response: Response, **kwargs: Any) -> Any:
         for article_addr in response.xpath("//div[@id='dlpage']//a[@title='Abstract']/@href").getall():
@@ -36,4 +38,4 @@ class ArxivBase(PinholeScrapySpider):
 
 
 class ArxivSecurity(ArxivBase):
-    start_urls = ["https://export.arxiv.org/list/cs.CR/recent"]
+    start_urls = ["https://export.arxiv.org/list/cs.CR/new"]

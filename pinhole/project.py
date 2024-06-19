@@ -1,4 +1,6 @@
 from pinhole.datasource.document import Document, DocumentRef, Summary
+from pinhole.user import User, UserRef, AuthRequest
+
 from pydantic.dataclasses import dataclass, Field
 from pydantic.root_model import RootModel
 
@@ -15,6 +17,12 @@ class AbstractProject:
     """ The abstract base class for `RemoteProject` and `Project`. The design aims
     to guarantee that the API interface of the two types of projects remain exactly
     the same. """
+
+    def get_user_ref(self, email: str, password: str) -> Optional[UserRef]:
+        raise NotImplementedError
+
+    def get_admin_password(self) -> str:
+        raise NotImplementedError
 
     def create_document(self, document: Document) -> None:
         raise NotImplementedError
@@ -61,6 +69,16 @@ class RemoteProject:
 
         return resp
 
+    def get_user_ref(self, email: str, password: str) -> Optional[UserRef]:
+        remote_addr = f"{self.base_addr}/user/get"
+        req = AuthRequest(email, password)
+        resp = self.__post(remote_addr, data=RootModel[AuthRequest](req).model_dump_json())
+
+        if resp["user"] is None:
+            return None
+        else:
+            return UserRef.from_json(resp["user"])
+
     def create_document(self, document: Document) -> None:
         remote_addr = f"{self.base_addr}/document/create"
         document_json = RootModel[Document](document).model_dump_json()
@@ -103,8 +121,11 @@ class RemoteProject:
 
 @dataclass
 class Project:
+
     database_path: str
     vector_store_path: str
+    admin_email: str = "admin"
+    admin_password: str = "admin"
 
     def set_project_path(self, path: str) -> None:
         setattr(self, "__path__", path)
@@ -144,6 +165,12 @@ class Project:
         dbconn = sqlite3.connect(join(self.project_path, self.database_path))
         setattr(self, "__dbconn__", dbconn)
         return dbconn
+
+    def get_user_ref(self, email: str, password: str) -> Optional[UserRef]:
+        if email == self.admin_email and password == self.admin_password:
+            return UserRef(-1, email, "administrator")
+
+        return None
 
     ###########################################################################
     # Assistant functions for managing documents

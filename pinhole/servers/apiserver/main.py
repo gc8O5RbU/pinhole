@@ -1,10 +1,12 @@
 
 from pinhole.datasource.document import Document, Summary
 from pinhole.project import Project
+from pinhole.user import AuthRequest
 
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+
 from os import environ
 from os.path import isdir
 
@@ -19,6 +21,14 @@ async def root():
     return {
         "succeeded": True,
         "message": "no method specified"
+    }
+
+
+@app.post("/user/get")
+async def get_user_ref(request: AuthRequest):
+    return {
+        "succeeded": True,
+        "user": project.get_user_ref(request.email, request.password)
     }
 
 

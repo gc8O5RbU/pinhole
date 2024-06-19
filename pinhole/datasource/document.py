@@ -1,17 +1,9 @@
+from pinhole.datasource.utils import str2hexstr, hexstr2str
+
 from pydantic.dataclasses import dataclass
-from pydantic import RootModel, WithJsonSchema
-from pydantic import PlainValidator, PlainSerializer, errors
+from pydantic import RootModel
 
 from datetime import datetime
-from typing import Annotated, Any
-
-
-def str2hexstr(body: str) -> str:
-    return body.encode('utf8').hex()
-
-
-def hexstr2str(body: str) -> str:
-    return bytes.fromhex(body).decode('utf8')
 
 
 @dataclass(repr=False)
