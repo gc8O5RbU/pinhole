@@ -1,4 +1,5 @@
 from pinhole.datasource.document import Document, DocumentRef, Summary
+from pinhole.datasource.publication import Publication, PublicationRef
 from pinhole.user import User, UserRef, AuthRequest
 
 from pydantic.dataclasses import dataclass, Field
@@ -30,10 +31,22 @@ class AbstractProject:
     def get_document(self, document_id: int) -> Optional[Document]:
         raise NotImplementedError
 
+    def get_document_refs(self) -> List[DocumentRef]:
+        raise NotImplementedError
+
     def create_summary(self, summary: Summary) -> None:
         raise NotImplementedError
 
     def get_summary(self, document_id: int) -> Optional[Summary]:
+        raise NotImplementedError
+
+    def create_publication(self, publication: Publication) -> None:
+        raise NotImplementedError
+
+    def get_publication(self, publication_id: int) -> Optional[Publication]:
+        raise NotImplementedError
+
+    def get_publication_refs(self) -> List[PublicationRef]:
         raise NotImplementedError
 
 
@@ -117,6 +130,22 @@ class RemoteProject:
             return None
         else:
             return Summary.from_json(resp["summary"])
+
+    def create_publication(self, publication: Publication) -> None:
+        remote_addr = f"{self.base_addr}/publication/create"
+        publication_json = RootModel[Publication](publication).model_dump_json()
+        self.__post(remote_addr, data=publication_json)
+
+    def get_publication_refs(self) -> List[PublicationRef]:
+        remote_addr = f"{self.base_addr}/publication/list"
+        resp = self.__get(remote_addr)
+
+        prefs = []
+        for publication in resp['publications']:
+            pref = PublicationRef.from_json(publication)
+            prefs.append(pref)
+
+        return prefs
 
 
 @dataclass
@@ -280,3 +309,65 @@ class Project:
         assert len(rows) == 1
         (id, document_id, model, summary) = rows[0]
         return Summary.build(document_id, model, summary)
+
+    ###########################################################################
+    # Assistant functions for managing publications
+    ###########################################################################
+    def __create_publications_table(self) -> None:
+        cur = self.__dbconn.cursor()
+        sql = """
+        CREATE TABLE IF NOT EXISTS publications (
+            id integer PRIMARY KEY,
+            title text,
+            authors text,
+            date integer,
+            booktitle text,
+            url text UNIQUE,
+            publisher text,
+            domain_identifier text UNIQUE,
+            type text,
+            abstract text
+        )
+        """
+        cur.execute(sql)
+
+    def create_publication(self, publication: Publication) -> None:
+        self.__create_publications_table()
+        cur = self.__dbconn.cursor()
+        sql = f"""
+        INSERT INTO publications
+            (title, authors, date, booktitle,
+             url, publisher, domain_identifier, type, abstract)
+            VALUES
+            (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        cur.execute(
+            sql,
+            (
+                publication.title,
+                "|".join(publication.authors),
+                publication.date.timestamp(),
+                publication.booktitle,
+                publication.url,
+                publication.publisher,
+                publication.domain_identifier,
+                publication.type,
+                publication.abstract
+            )
+        )
+        self.__dbconn.commit()
+
+    def get_publication_refs(self) -> List[PublicationRef]:
+        self.__create_publications_table()
+        cur = self.__dbconn.cursor()
+        sql = "SELECT id, title, date, booktitle, url, domain_identifier, type FROM publications"
+        cur.execute(sql)
+
+        result = []
+        for (id, title, date, booktitle, url, domain_identifier, type) in cur.fetchall():
+            result.append(PublicationRef.build(
+                id, title, datetime.fromtimestamp(date), booktitle,
+                url, domain_identifier, type
+            ))
+
+        return result

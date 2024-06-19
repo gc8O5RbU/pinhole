@@ -24,8 +24,8 @@ def navi() -> None:
 
     with st.sidebar.container():
         st.page_link("home.py", label="Pinhole")
-        st.page_link("pages/ask.py", label="Ask")
-        st.page_link("pages/blog.py", label="Blog")
+        # st.page_link("pages/ask.py", label="Ask")
+        # st.page_link("pages/blog.py", label="Blog")
         st.page_link("pages/academic.py", label="Academic Overview")
         st.page_link("pages/industrial.py", label="Industrial Timeline")
 

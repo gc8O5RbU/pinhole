@@ -1,5 +1,6 @@
 
 from pinhole.datasource.document import Document, Summary
+from pinhole.datasource.publication import Publication
 from pinhole.project import Project
 from pinhole.user import AuthRequest
 
@@ -65,6 +66,20 @@ async def get_summary(document_id: int):
     return {
         "succeeded": True,
         "summary": project.get_summary(document_id)
+    }
+
+
+@app.post("/publication/create")
+async def create_publication(publication: Publication):
+    project.create_publication(publication)
+    return {"succeeded": True}
+
+
+@app.get("/publication/list")
+async def list_publication():
+    return {
+        "succeeded": True,
+        "publications": project.get_publication_refs()
     }
 
 

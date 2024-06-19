@@ -1,5 +1,6 @@
 from pinhole.datasource.spiders.all import all_spiders, PinholeSpider
 from pinhole.datasource.document import Document, DocumentRef, Summary
+from pinhole.datasource.publication import Publication
 from pinhole.project import RemoteProject
 from pinhole.models.deepseek import DeepSeekChatModel
 from pinhole.models.openai import OpenaiChatModel
@@ -8,7 +9,7 @@ from pinhole.models.profiler import Profiler
 
 from argparse import ArgumentParser, Namespace
 from loguru import logger
-from typing import List
+from typing import List, Union
 from typing import Optional
 
 
@@ -45,21 +46,26 @@ def crawler(args: Namespace) -> None:
     if spider_names:
         logger.warning(f"the following spiders {spider_names} are not found")
 
-    documents: List[Document] = []
+    artifacts: List[Union[Document, Publication]] = []
     for spider_instance in spider_instances:
         spider_instance.join()
-        documents.extend(spider_instance.collect())
+        artifacts.extend(spider_instance.collect())
 
-    logger.info(f"{len(spider_instances)} spiders finished with {len(documents)} documents")
+    logger.info(f"{len(spider_instances)} spiders finished with {len(artifacts)} artifacts")
 
     nadded = 0
     existing_urls = {dref.url for dref in project.get_document_refs()}
-    for document in documents:
-        if document.url not in existing_urls:
-            project.create_document(document)
+    existing_urls.update({pref.url for pref in project.get_publication_refs()})
+
+    for artifact in artifacts:
+        if isinstance(artifact, Document) and artifact.url not in existing_urls:
+            project.create_document(artifact)
+            nadded += 1
+        elif isinstance(artifact, Publication) and artifact.url not in existing_urls:
+            project.create_publication(artifact)
             nadded += 1
 
-    logger.info(f"{nadded} new documents are added to the project")
+    logger.info(f"{nadded} new artifacts are added to the project")
 
 
 def summarizer() -> None:

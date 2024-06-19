@@ -1,11 +1,12 @@
 from pinhole.datasource.document import Document
+from pinhole.datasource.publication import Publication
 from scrapy import Spider  # type: ignore
 from scrapy.crawler import CrawlerProcess  # type: ignore
 from loguru import logger
 
 from multiprocessing import Process, current_process
 from tempfile import mkstemp
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 import json
 
@@ -15,7 +16,7 @@ class PinholeSpider:
     def get_name(self) -> str:
         raise NotImplementedError
 
-    def collect(self) -> List[Document]:
+    def collect(self) -> List[Union[Document, Publication]]:
         raise NotImplementedError
 
     def start(self) -> None:
@@ -48,7 +49,7 @@ class PinholeNativeSpider(PinholeSpider):
 
         self.process.join(timeout)
 
-    def collect(self) -> List[Document]:
+    def collect(self) -> List[Union[Document, Publication]]:
         return []
 
 
@@ -93,14 +94,18 @@ class PinholeScrapySpider(PinholeSpider, Spider):
 
         self.process.join(timeout)
 
-    def collect(self) -> List[Document]:
+    def collect(self) -> List[Union[Document, Publication]]:
         self.join()
 
-        documents = []
+        artifacts: List[Union[Document, Publication]] = []
         with open(self.temp_file, "r") as ftemp:
             data = ftemp.read()
             for item in json.loads(data):
-                document = Document.from_json(item)
-                documents.append(document)
+                if "_abstract" in item:
+                    publication = Publication.from_json(item)
+                    artifacts.append(publication)
+                else:
+                    document = Document.from_json(item)
+                    artifacts.append(document)
 
-        return documents
+        return artifacts
