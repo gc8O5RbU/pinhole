@@ -55,7 +55,7 @@ class AbstractProject:
 
 
 @dataclass
-class RemoteProject:
+class RemoteProject(AbstractProject):
     base_addr: str = ""
 
     def __get(self, url: str) -> Dict[str, Any]:
@@ -159,6 +159,14 @@ class RemoteProject:
             prefs.append(pref)
 
         return prefs
+
+    def get_publication(self, publication_id: int) -> Optional[Publication]:
+        remote_addr = f"{self.base_addr}/publication/get?id={publication_id}"
+        resp = self.__get(remote_addr)
+        if resp["publication"] is None:
+            return None
+        else:
+            return Publication.from_json(resp["publication"])
 
 
 @dataclass
@@ -299,15 +307,20 @@ class Project:
     def create_summary(self, summary: Summary) -> None:
         self.__create_document_table()
         cur = self.__dbconn.cursor()
-        sql = f"""
-        INSERT INTO summaries
-            (document_id, model, content) VALUES
-            (?, ?, ?)
-        """
-        cur.execute(
-            sql,
-            (summary.document_id, summary.model, summary.content)
-        )
+
+        if summary.document_id >= 0:
+            sql = "INSERT INTO summaries (document_id, model, content) VALUES (?, ?, ?)"
+            cur.execute(
+                sql,
+                (summary.document_id, summary.model, summary.content)
+            )
+        elif summary.publication_id >= 0:
+            sql = "INSERT INTO summaries (publication_id, model, content) VALUES (?, ?, ?)"
+            cur.execute(
+                sql,
+                (summary.publication_id, summary.model, summary.content)
+            )
+
         self.__dbconn.commit()
 
     def get_summary_of_document(self, document_id: int) -> Optional[Summary]:
@@ -399,3 +412,22 @@ class Project:
             ))
 
         return result
+
+    def get_publication(self, publication_id: int) -> Optional[Publication]:
+        self.__create_publications_table()
+        cur = self.__dbconn.cursor()
+        sql = "SELECT title, authors, date, booktitle, url, publisher, domain_identifier, type, abstract " + \
+              "FROM publications where id = ?"
+
+        cur.execute(sql, (publication_id,))
+        rows = cur.fetchall()
+
+        if len(rows) == 0:
+            return None
+
+        assert len(rows) == 1
+        title, str_authors, date, booktitle, url, publisher, domain_identifier, type, abstract = rows[0]
+        return Publication.build(
+            title, str_authors.split("|"), datetime.fromtimestamp(date),
+            booktitle, url, publisher, domain_identifier, type, abstract
+        )

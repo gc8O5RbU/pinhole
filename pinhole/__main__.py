@@ -22,7 +22,7 @@ def parse_args() -> Namespace:
 def run_apiserver(args: Namespace) -> None:
     api_server_path = join(dirname(realpath(argv[0])), "servers", "apiserver", "main.py")
     argv.clear()
-    argv.extend(["fastapi", "dev", api_server_path])
+    argv.extend(["fastapi", "run", api_server_path])
     environ['PINHOLE_PROJECT'] = args.project
     fastapi_main()
 

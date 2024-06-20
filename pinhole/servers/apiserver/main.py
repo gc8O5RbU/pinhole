@@ -88,6 +88,14 @@ async def list_publication():
     }
 
 
+@app.get("/publication/get")
+async def get_publication(id: int):
+    return {
+        "succeeded": True,
+        "publication": project.get_publication(id)
+    }
+
+
 @app.exception_handler(Exception)
 async def exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     content = {
