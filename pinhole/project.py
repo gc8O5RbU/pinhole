@@ -208,11 +208,15 @@ class Project:
             f.write(RootModel[Project](self).model_dump_json())
 
     @property
+    def database_realpath(self) -> str:
+        return join(self.project_path, self.database_path)
+
+    @property
     def __dbconn(self) -> sqlite3.Connection:
         if hasattr(self, "__dbconn__"):
             return getattr(self, "__dbconn__")
 
-        dbconn = sqlite3.connect(join(self.project_path, self.database_path))
+        dbconn = sqlite3.connect(self.database_realpath)
         setattr(self, "__dbconn__", dbconn)
         return dbconn
 

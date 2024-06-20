@@ -5,18 +5,50 @@ from pinhole.datasource.publication import Publication
 from pinhole.project import Project
 from pinhole.user import AuthRequest
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
+from tempfile import mktemp
+from shutil import copy
 from typing import Optional
-from os import environ
+from os import environ, remove
 from os.path import isdir
+
+import base64
 
 
 app = FastAPI()
 project_path = environ['PINHOLE_PROJECT']
 project = Project.loadf(project_path) if isdir(project_path) else Project.create(project_path)
+
+
+@app.middleware('http')
+async def authentication_middleware(request: Request, call_next):
+    authorized = False
+
+    if request.client is not None and request.client.host == '127.0.0.1':
+        authorized = True
+    else:
+        try:
+            encoded_email, encoded_pwd = request.get('Authentication', '').split(':')
+            email = base64.b64decode(encoded_email).decode('utf-8')
+            pwd = base64.b64decode(encoded_pwd).decode('utf-8')
+            if pwd == project.admin_password and email == project.admin_email:
+                authorized = True
+        except Exception as ex:
+            pass
+
+    if authorized:
+        return await call_next(request)
+    else:
+        return JSONResponse(
+            {
+                "succeeded": False,
+                "message": "authentication failure"
+            },
+            status_code=403
+        )
 
 
 @app.get("/")
@@ -104,3 +136,17 @@ async def exception_handler(request: Request, exc: RequestValidationError) -> JS
     }
 
     return JSONResponse(content=content, status_code=status.HTTP_400_BAD_REQUEST)
+
+
+@app.get("/download/database")
+async def download_database():
+    tempfile = mktemp()
+    print(copy(project.database_realpath, tempfile))
+
+    with open(tempfile, 'rb') as ftemp:
+        content = ftemp.read()
+
+    remove(tempfile)
+    return Response(content, headers={
+        'Content-Disposition': f'attachment; filename="database.db"'
+    })

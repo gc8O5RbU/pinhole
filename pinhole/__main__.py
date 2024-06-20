@@ -12,6 +12,8 @@ def parse_args() -> Namespace:
     subparsers = parser.add_subparsers(dest='command', required=True)
     apiserver = subparsers.add_parser("apiserver")
     apiserver.add_argument("project", type=str)
+    apiserver.add_argument("--dev", action='store_true',
+                           help='run as development mode in FastAPI')
     appserver = subparsers.add_parser("appserver")
     appserver.add_argument("--port", type=int, default=8080)
     collector = subparsers.add_parser("collector")
@@ -22,7 +24,11 @@ def parse_args() -> Namespace:
 def run_apiserver(args: Namespace) -> None:
     api_server_path = join(dirname(realpath(argv[0])), "servers", "apiserver", "main.py")
     argv.clear()
-    argv.extend(["fastapi", "run", api_server_path])
+    argv.extend([
+        "fastapi",
+        "dev" if args.dev else "run",
+        api_server_path
+    ])
     environ['PINHOLE_PROJECT'] = args.project
     fastapi_main()
 
