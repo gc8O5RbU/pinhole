@@ -20,17 +20,7 @@ def display_documents(title: str, drefs: List[DocumentRef], filt: Callable[[Docu
             container.markdown(f"**[{date}]** (*{dref.publisher}*) {dref.title}")
             cols = st.columns(6)
             cols[0].link_button("Link | 原文", url=dref.url, use_container_width=True)
-            if cols[1].button("Summary | 简介", key=f"summary-{dref.id}", use_container_width=True):
-                display_summary(dref)
-
-
-@st.experimental_dialog("Summary | 简介", width="large")
-def display_summary(dref: DocumentRef) -> None:
-    st.subheader(dref.title)
-    st.write(dref.date)
-    summary = project.get_summary_of_document(dref.id)
-    if summary is not None:
-        st.markdown(summary.content)
+            cols[1].link_button("Summary | 综述", url=f"/document?id={dref.id}", use_container_width=True)
 
 
 st.set_page_config(
