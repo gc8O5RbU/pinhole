@@ -145,26 +145,28 @@ def summarize_publications(args: Namespace) -> None:
     {content}
     """
 
-    def summarize_arxiv(pref: PublicationRef) -> None:
+    def summarize_arxiv(pref: PublicationRef) -> Optional[Summary]:
         html_addr = f"https://arxiv.org/html/{pref.domain_identifier}"
         resp = requests.get(html_addr)
         if resp.status_code != 200:
             logger.error(f"http error {resp.status_code} when fetching html for {pref.domain_identifier}")
-            return
+            return None
 
         content = md(resp.text)
         if content is None:
             logger.error(f"failed to tranfer html to markdown for {pref.domain_identifier}")
-            return
+            return None
 
         for model in models:
             try:
                 ctx = ChatContext(model, system_prompt=system_prompt)
                 s = ctx.chat(prompt_template.format(title=pref.title, content=content))
                 summary = Summary.build(-1, pref.id, model.pretty_name(), s)
-                project.create_summary(summary)
+                return summary
             except Exception as ex:
                 logger.warning(f"model {model.pretty_name()} reports failure: {ex}")
+
+        return None
 
     prefs_to_summarize: List[PublicationRef] = []
     for pref in project.get_publication_refs():
@@ -172,19 +174,24 @@ def summarize_publications(args: Namespace) -> None:
             prefs_to_summarize.append(pref)
 
     prefs_to_summarize.sort(key=lambda p: p.date, reverse=True)
+
     N = len(prefs_to_summarize)
     for i, pref in enumerate(prefs_to_summarize):
         publication = project.get_publication(pref.id)
         if publication is None:
             continue
 
+        summary: Optional[Summary] = None
         if publication.publisher == 'arxiv':
-            summarize_arxiv(pref)
+            summary = summarize_arxiv(pref)
         else:
             logger.warning(f"unknown publisher {publication.publisher} {publication.title}")
 
-        if i > 10:
-            break
+        if summary is not None:
+            project.create_summary(summary)
+            logger.info(f"({i}/{N}) summary created for publication {pref.id}: {pref.title}")
+        else:
+            logger.error(f"({i}/{N}) failed to summarize publication {pref.id}: {pref.title}")
 
     profiler.print_stats()
 
