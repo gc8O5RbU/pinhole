@@ -31,7 +31,7 @@ async def authentication_middleware(request: Request, call_next):
         authorized = True
     else:
         try:
-            encoded_email, encoded_pwd = request.get('Authentication', '').split(':')
+            encoded_email, encoded_pwd = request.headers.get('Authentication', '').split(':')
             email = base64.b64decode(encoded_email).decode('utf-8')
             pwd = base64.b64decode(encoded_pwd).decode('utf-8')
             if pwd == project.admin_password and email == project.admin_email:
@@ -141,7 +141,7 @@ async def exception_handler(request: Request, exc: RequestValidationError) -> JS
 @app.get("/download/database")
 async def download_database():
     tempfile = mktemp()
-    print(copy(project.database_realpath, tempfile))
+    copy(project.database_realpath, tempfile)
 
     with open(tempfile, 'rb') as ftemp:
         content = ftemp.read()
