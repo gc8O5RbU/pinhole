@@ -1,10 +1,11 @@
 from pinhole.project import RemoteProject
 from pydantic.dataclasses import dataclass
-
+from os import environ
 import streamlit as st
 
 
-project = RemoteProject("http://127.0.0.1:8000")
+project_port = environ['PINHOLE_API_SERVER_PORT']
+project = RemoteProject(f"http://127.0.0.1:{project_port}")
 
 
 @dataclass

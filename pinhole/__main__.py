@@ -10,12 +10,24 @@ from sys import argv
 def parse_args() -> Namespace:
     parser = ArgumentParser("pinhole")
     subparsers = parser.add_subparsers(dest='command', required=True)
+
+    ###########################################################################
+    # API Server Arguments
+    ###########################################################################
     apiserver = subparsers.add_parser("apiserver")
     apiserver.add_argument("project", type=str)
+    apiserver.add_argument("--port", type=int, default=8801,
+                           help="the listening port of the apiserver")
     apiserver.add_argument("--dev", action='store_true',
                            help='run as development mode in FastAPI')
+
+    ###########################################################################
+    # APP Server Arguments
+    ###########################################################################
     appserver = subparsers.add_parser("appserver")
     appserver.add_argument("--port", type=int, default=8080)
+    appserver.add_argument("--api-server-port", type=int, default=8801)
+
     collector = subparsers.add_parser("collector")
     collector_add_subparser_args(collector)
     return parser.parse_args()
@@ -27,7 +39,8 @@ def run_apiserver(args: Namespace) -> None:
     argv.extend([
         "fastapi",
         "dev" if args.dev else "run",
-        api_server_path
+        api_server_path,
+        "--port", args.port
     ])
     environ['PINHOLE_PROJECT'] = args.project
     fastapi_main()
@@ -36,6 +49,8 @@ def run_apiserver(args: Namespace) -> None:
 def run_appserver(args: Namespace) -> None:
     app_server_path = join(dirname(realpath(argv[0])), "servers", "appserver", "home.py")
     from streamlit.web.cli import main_run
+    environ['PINHOLE_API_SERVER_PORT'] = str(args.api_server_port)
+
     main_run([
         app_server_path,
         "--server.port", str(args.port),
