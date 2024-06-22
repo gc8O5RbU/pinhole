@@ -27,6 +27,7 @@ def parse_args() -> Namespace:
     appserver = subparsers.add_parser("appserver")
     appserver.add_argument("--port", type=int, default=8080)
     appserver.add_argument("--api-server-port", type=int, default=8801)
+    appserver.add_argument("--base-path", type=str, default="")
 
     collector = subparsers.add_parser("collector")
     collector_add_subparser_args(collector)
@@ -50,6 +51,7 @@ def run_appserver(args: Namespace) -> None:
     app_server_path = join(dirname(realpath(argv[0])), "servers", "appserver", "home.py")
     from streamlit.web.cli import main_run
     environ['PINHOLE_API_SERVER_PORT'] = str(args.api_server_port)
+    environ['PINHOLE_APP_SERVER_BASEPATH'] = str(args.base_path)
 
     main_run([
         app_server_path,

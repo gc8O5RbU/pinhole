@@ -1,11 +1,14 @@
 from pinhole.project import RemoteProject
 from pydantic.dataclasses import dataclass
 from os import environ
+
+import math
 import streamlit as st
 
 
 project_port = environ['PINHOLE_API_SERVER_PORT']
 project = RemoteProject(f"http://127.0.0.1:{project_port}")
+base_path = environ['PINHOLE_APP_SERVER_BASEPATH']
 
 
 @dataclass
@@ -61,3 +64,11 @@ def auth() -> AuthState:
                 st.rerun()
 
     return auth_state
+
+
+def paginator(item_per_page: int, item_total: int) -> int:
+    total_pages = math.ceil(item_total / item_per_page)
+    current_page = st.number_input(
+        f"Page ({total_pages} in total)", min_value=1, max_value=total_pages, step=1
+    )
+    return int(current_page) - 1
