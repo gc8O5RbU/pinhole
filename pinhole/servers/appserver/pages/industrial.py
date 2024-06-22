@@ -28,9 +28,23 @@ def display_documents(drefs: List[DocumentRef]) -> None:
 
 docrefs = project.get_document_refs()
 docrefs.sort(key=lambda ref: ref.date, reverse=True)
-
-
 item_per_page = 10
-page = paginator(item_per_page, len(docrefs))
+
+cols = st.columns([3, 1])
+keywords = [kw.lower() for kw in cols[0].text_input(label="Search by keyword").split()]
+
+if len(keywords) > 0:
+    matched_docrefs: List[DocumentRef] = []
+    for dref in docrefs:
+        title = dref.title.lower()
+        for kw in keywords:
+            if kw in title:
+                matched_docrefs.append(dref)
+                break
+
+    docrefs = matched_docrefs
+
+with cols[1]:
+    page = paginator(item_per_page, len(docrefs))
 
 display_documents(docrefs[page * item_per_page:(page + 1) * item_per_page])

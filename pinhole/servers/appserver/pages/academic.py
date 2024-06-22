@@ -29,8 +29,23 @@ def display_publications(prefs: List[PublicationRef]) -> None:
 
 prefs = project.get_publication_refs()
 prefs.sort(key=lambda ref: ref.date, reverse=True)
-
 item_per_page = 10
-page = paginator(item_per_page, len(prefs))
+
+cols = st.columns([3, 1])
+keywords = [kw.lower() for kw in cols[0].text_input(label="Search by keyword").split()]
+
+if len(keywords) > 0:
+    matched_prefs: List[PublicationRef] = []
+    for pref in prefs:
+        title = pref.title.lower()
+        for kw in keywords:
+            if kw in title:
+                matched_prefs.append(pref)
+                break
+
+    prefs = matched_prefs
+
+with cols[1]:
+    page = paginator(item_per_page, len(prefs))
 
 display_publications(prefs[page * item_per_page:(page + 1) * item_per_page])

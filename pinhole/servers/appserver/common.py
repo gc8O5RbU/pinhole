@@ -69,6 +69,8 @@ def auth() -> AuthState:
 def paginator(item_per_page: int, item_total: int) -> int:
     total_pages = math.ceil(item_total / item_per_page)
     current_page = st.number_input(
-        f"Page ({total_pages} in total)", min_value=1, max_value=total_pages, step=1
+        f"Page ({total_pages} in total)",
+        min_value=1, max_value=min(1, total_pages),
+        step=1
     )
     return int(current_page) - 1
