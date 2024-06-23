@@ -37,10 +37,8 @@ if len(keywords) > 0:
     matched_docrefs: List[DocumentRef] = []
     for dref in docrefs:
         title = dref.title.lower()
-        for kw in keywords:
-            if kw in title:
-                matched_docrefs.append(dref)
-                break
+        if all(kw in title for kw in keywords):
+            matched_docrefs.append(dref)
 
     docrefs = matched_docrefs
 

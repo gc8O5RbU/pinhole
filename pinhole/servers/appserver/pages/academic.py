@@ -38,10 +38,8 @@ if len(keywords) > 0:
     matched_prefs: List[PublicationRef] = []
     for pref in prefs:
         title = pref.title.lower()
-        for kw in keywords:
-            if kw in title:
-                matched_prefs.append(pref)
-                break
+        if all(kw in title for kw in keywords):
+            matched_prefs.append(pref)
 
     prefs = matched_prefs
 
