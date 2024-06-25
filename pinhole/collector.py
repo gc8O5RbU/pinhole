@@ -2,14 +2,13 @@ from pinhole.datasource.spiders.all import all_spiders, PinholeSpider
 from pinhole.datasource.document import Document, DocumentRef
 from pinhole.datasource.summary import Summary
 from pinhole.datasource.publication import Publication, PublicationRef
+from pinhole.datasource.loaders.arxiv import load_arxiv_content
 from pinhole.project import RemoteProject
 from pinhole.models.deepseek import DeepSeekChatModel
 from pinhole.models.openai import OpenaiChatModel
 from pinhole.models.glm import GLMChatModel
 from pinhole.models.base import ChatContext, ChatModel
 from pinhole.models.profiler import Profiler
-
-from markdownify import markdownify as md  # type: ignore
 
 from argparse import ArgumentParser, Namespace
 from loguru import logger
@@ -19,17 +18,17 @@ from typing import Optional
 import requests
 
 
-project = RemoteProject("http://127.0.0.1:8000")
+project = RemoteProject("http://127.0.0.1:8801")
 
 
 def collector_add_subparser_args(parser: ArgumentParser) -> None:
     parser.add_argument("--spider", type=str,
                         help="specify a list of spiders to run, separated by ','." +
                              "all spiders will be executed by default")
-    parser.add_argument("--no-summarizing", action='store_true',
-                        help="do not run the LLM-based summarization procedure")
-    parser.add_argument("--no-crawling", action="store_true",
-                        help="do not run the crawling spiders")
+    parser.add_argument("--summarizing", action='store_true',
+                        help="run the LLM-based summarization procedure")
+    parser.add_argument("--crawling", action="store_true",
+                        help="run the crawling spiders")
 
 
 def crawler(args: Namespace) -> None:
@@ -146,15 +145,9 @@ def summarize_publications(args: Namespace) -> None:
     """
 
     def summarize_arxiv(pref: PublicationRef) -> Optional[Summary]:
-        html_addr = f"https://arxiv.org/html/{pref.domain_identifier}"
-        resp = requests.get(html_addr)
-        if resp.status_code != 200:
-            logger.error(f"http error {resp.status_code} when fetching html for {pref.domain_identifier}")
-            return None
-
-        content = md(resp.text)
+        content = load_arxiv_content(pref.domain_identifier)
         if content is None:
-            logger.error(f"failed to tranfer html to markdown for {pref.domain_identifier}")
+            logger.error(f"failed to get content of arxiv document {pref.domain_identifier}")
             return None
 
         for model in models:
@@ -188,6 +181,7 @@ def summarize_publications(args: Namespace) -> None:
             logger.warning(f"unknown publisher {publication.publisher} {publication.title}")
 
         if summary is not None:
+            logger.debug(summary.content)
             project.create_summary(summary)
             logger.info(f"({i}/{N}) summary created for publication {pref.id}: {pref.title}")
         else:
@@ -197,9 +191,8 @@ def summarize_publications(args: Namespace) -> None:
 
 
 def main(args: Namespace) -> None:
-    logger.info("start information collecting")
-    if not args.no_crawling:
+    if args.crawling:
         crawler(args)
-    if not args.no_summarizing:
+    if args.summarizing:
         summarize_documents(args)
         summarize_publications(args)
