@@ -29,7 +29,7 @@ def display_publications(prefs: List[PublicationRef]) -> None:
 
 prefs = project.get_publication_refs()
 prefs.sort(key=lambda ref: ref.date, reverse=True)
-item_per_page = 10
+item_per_page = 15
 
 cols = st.columns([3, 1])
 keywords = [kw.lower() for kw in cols[0].text_input(label="Search by keyword").split()]

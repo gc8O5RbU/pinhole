@@ -26,6 +26,13 @@ def __auth_state() -> AuthState:
 def navi() -> None:
     auth_state = __auth_state()
 
+    # decrease the top padding between the header and the top bar
+    st.markdown("""
+    <style>
+    .block-container { padding-top: 3em; }
+    </style>
+    """, unsafe_allow_html=True)
+
     with st.sidebar.container():
         st.page_link("home.py", label="Pinhole")
         # st.page_link("pages/ask.py", label="Ask")
@@ -35,6 +42,7 @@ def navi() -> None:
 
         if auth_state.logined:
             st.page_link("pages/submission.py", label="Submission", use_container_width=True)
+            st.page_link("pages/subscription.py", label="Subscription", use_container_width=True)
 
         st.divider()
 

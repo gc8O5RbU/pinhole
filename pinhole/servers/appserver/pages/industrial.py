@@ -28,7 +28,7 @@ def display_documents(drefs: List[DocumentRef]) -> None:
 
 docrefs = project.get_document_refs()
 docrefs.sort(key=lambda ref: ref.date, reverse=True)
-item_per_page = 10
+item_per_page = 15
 
 cols = st.columns([3, 1])
 keywords = [kw.lower() for kw in cols[0].text_input(label="Search by keyword").split()]
