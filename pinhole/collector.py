@@ -66,11 +66,17 @@ def crawler(args: Namespace) -> None:
 
     for artifact in artifacts:
         if isinstance(artifact, Document) and artifact.url not in existing_urls:
-            project.create_document(artifact)
-            nadded += 1
+            try:
+                project.create_document(artifact)
+                nadded += 1
+            except Exception as ex:
+                logger.error(f"failed to create document at {artifact.url}: {ex}")
         elif isinstance(artifact, Publication) and artifact.url not in existing_urls:
-            project.create_publication(artifact)
-            nadded += 1
+            try:
+                project.create_publication(artifact)
+                nadded += 1
+            except Exception as ex:
+                logger.error(f"failed to create publication at {artifact.url}: {ex}")
 
     logger.info(f"{nadded} new artifacts are added to the project")
 
